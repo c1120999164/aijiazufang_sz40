@@ -1,10 +1,7 @@
-from django.db import models
-
-# Create your models here.
 from django.db.models import Q
 
-from ihome.apps.order.models import Order
-from ihome.utils import BaseModel
+from order.models import Order
+from ihome.utils.models import BaseModel
 from django.db import models
 
 

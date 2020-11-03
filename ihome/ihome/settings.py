@@ -13,7 +13,7 @@ https://docs.djangoproject.com/en/2.2/ref/settings/
 import os,sys
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # 为了能够直接导入应用，我们把应用所在的apps文件夹的绝对路径加入导包路径sys.path列表中
 sys.path.insert(
@@ -103,7 +103,7 @@ DATABASES = {
         'NAME': 'ihome',
         'HOST': '127.0.0.1',
         'USER': 'root',
-        'PASSWORD': 'mysql',
+        'PASSWORD': 'chuanzhi',
         # 'PORT': 3306 # 默认知名端口3306，mysql没有修改的情况下可以不用指定
     }
 }
@@ -146,3 +146,6 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.2/howto/static-files/
 
 STATIC_URL = '/static/'
+
+# 指定本项目使用我们自定义的模型类: '应用名称.User'
+AUTH_USER_MODEL = 'users.User'
