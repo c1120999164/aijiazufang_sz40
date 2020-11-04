@@ -22,17 +22,7 @@ sys.path.insert(
 )
 
 
-# 缓存配置项
-CACHES = {
-    # 默认存储信息: 存到 0 号库
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://127.0.0.1/0", # redis://<redis所在主机ip>:<redis端口>/<几号库>
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-        }
-    }
-}
+
 
 
 # Quick-start development settings - unsuitable for production
@@ -56,13 +46,25 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'corsheaders', # 安装cors应用，解决跨域问题
     'users',
     'order',
     'homes',
     'verifications',
 ]
 
+
+# CORS跨域请求白名单设置
+CORS_ORIGIN_WHITELIST = [
+    'http://0.0.0.0:8081'
+]
+
+CORS_ALLOW_CREDENTIALS = True  # 允许携带cookie
+
+
 MIDDLEWARE = [
+    # 添加跨域中间件，以此响应options请求
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -92,6 +94,11 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'ihome.wsgi.application'
 
+AUTHENTICATION_BACKENDS = [
+    # 'django.contrib.auth.backends.ModelBackend', # 默认的认证后端
+    'users.utils.UsernameMobileAuthBackend', # 自定义的认证后端
+]
+
 
 # Database
 # https://docs.djangoproject.com/en/2.2/ref/settings/#databases
@@ -103,12 +110,51 @@ DATABASES = {
         'NAME': 'ihome',
         'HOST': '127.0.0.1',
         'USER': 'root',
-        'PASSWORD': 'chuanzhi',
+        'PASSWORD': 'mysql',
         # 'PORT': 3306 # 默认知名端口3306，mysql没有修改的情况下可以不用指定
     }
 }
 
 
+
+# 缓存配置项
+CACHES = {
+    # 默认存储信息: 存到 0 号库
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1/0", # redis://<redis所在主机ip>:<redis端口>/<几号库>
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    },
+    # session 信息: 存到 1 号库
+    "session": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    },
+    # verify_code 存储验证码 2号库
+    "verify_code": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/2",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    },
+
+
+
+    # verify_code 存储验证码 2号库
+    "history": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379/2",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
 # Password validation
 # https://docs.djangoproject.com/en/2.2/ref/settings/#auth-password-validators
 
