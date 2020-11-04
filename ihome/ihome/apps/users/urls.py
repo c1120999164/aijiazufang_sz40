@@ -14,4 +14,10 @@ urlpatterns = [
     re_path(r'^api/v1.0/users$', views.RegisterView.as_view()),
 
     re_path(r'^api/v1.0/session$', views.LoginView.as_view()),
+
+    re_path(r'^api/v1.0/user$', views.UserInfo.as_view()),
+
+    path('api/v1.0/user/name', views.UesrnameUpdataView.as_view()),
+
+    path('api/v1.0/user/auth', views.UesrAuthentificationView.as_view()),
 ]

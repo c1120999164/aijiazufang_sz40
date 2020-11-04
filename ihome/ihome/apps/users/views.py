@@ -8,6 +8,8 @@ from django.http import JsonResponse
 import json,re
 from django_redis import get_redis_connection
 from django.contrib.auth import login,authenticate,logout
+from ihome.utils.views import LoginRequiredJsonMixin
+from django.conf import settings
 
 
 # 判断手机号是否重复
@@ -71,7 +73,7 @@ class RegisterView(View):
 
         if not re.match(r'^\d{6}$', phonecode):
             return JsonResponse({
-                'code': 4101,
+                'errno': 4101,
                 'errmsg': '短信验证码格式有误',
             }, status=400)
 
@@ -113,6 +115,7 @@ class RegisterView(View):
 
 
 
+
 # 传统用户名密码登录
 class LoginView(View):
     def post(self,request):
@@ -134,3 +137,123 @@ class LoginView(View):
         response.set_cookie('username',username,max_age=3600*24*14)
         # merge_cart_cookie_to_redis(request=request, response=response)
         return response
+
+    def get(self,request):
+        # 提取参数
+        user = request.user
+        if not user.is_authenticated:
+            return JsonResponse({'errno':4101, 'errmsg':'未登录'})
+        data = {"name":user.username,"user_id":user.id}
+        return JsonResponse({'errno':0,'errmsg':'已登录','data':data})
+
+
+    # 退出登陆
+    def delete(self, request):
+        """
+        退出登陆，删除用户登陆信息
+        """
+        # 1、确定用户身份(当前以登陆的用户)
+        # request.user ---> 已登陆的用户模型类对象(User) 或 匿名用户对象(AnonymousUser)
+        # 2、删除该用户的session登陆数据，清除该用户的登陆状态
+        logout(request) # 通过request对象获取用户信息，然后在去清除session数据
+
+        response = JsonResponse({'errno': '0', 'errmsg': '已登出'})
+        response.delete_cookie('username')
+        return response
+
+
+
+#用户个人中心
+class UserInfo(LoginRequiredJsonMixin,View):
+    def get(self, request):
+        #　1.提取参数
+        user= request.user
+        username=user.username
+        image_name = User.objects.get(username=username).avatar.name
+        # 2.校验参数
+        #  用户未上传头像显示默认头像
+        if not image_name:
+            image_name = None
+
+        # 3. 业务处理
+        # 4. 退回响应
+        year = user.date_joined.year
+        month = user.date_joined.month
+        day = user.date_joined.day
+        hour = user.date_joined.hour
+        minute = user.date_joined.minute
+        second = user.date_joined.second
+
+        return JsonResponse({
+            'data':{
+                "avatar":image_name,
+                "create_time": "%d-%d-%d %02d:%02d:%02d" % (year, month, day, hour, minute, second),
+                "mobile": user.mobile,
+                "name": user.username,
+                "user_id": user.id,
+            },
+            "errmsg": "OK",
+            "errno": "0"
+        })
+
+
+# 用户名修改
+class UesrnameUpdataView(LoginRequiredJsonMixin, View):
+    def put(self, request):
+        # 1.提取参数
+        user = request.user
+        data = json.loads(request.body.decode())
+        new_username = data.get('name')
+
+        # 2.校验参数
+        if not new_username:
+            return JsonResponse({'errno': 4041, 'errmsg': '缺少必传参数'})
+
+        if not re.match(r'^[a-zA-Z0-9_-]{5,20}$', new_username):
+            return JsonResponse({'errno': 4041, 'errmsg': '用户名格式有误'})
+
+        # 3.业务数据处理：修改用户名
+        try:
+            user.username = new_username
+            user.save()
+        except Exception as e:
+            return JsonResponse({'errno': 4041, 'errmsg': '用户名修改错误'})
+
+        # 清理状态保持信息
+        logout(request)
+
+        response = JsonResponse({'errno': '0', 'errmsg': '修改成功'})
+        response.delete_cookie('username')
+        return response
+
+
+# 用户实名认证
+class UesrAuthentificationView(LoginRequiredJsonMixin, View):
+    def post(self, request):
+        # 1.提取参数
+        user = request.user
+        data = json.loads(request.body.decode())
+        real_name = data.get('real_name')
+        id_card = data.get('id_card')
+
+        # 2.校验参数
+        if not all([real_name, id_card]):
+            return JsonResponse({'errno': 4041, 'errmsg': '缺少必传参数'})
+
+        if not re.match(r'^\w{2,20}$', real_name):
+            return JsonResponse({'errno': 4041, 'errmsg': '真实名字格式错误'})
+
+        if not re.match(
+                r'(^[1-9]\d{5}(18|19|([23]\d))\d{2}((0[1-9])|(10|11|12))(([0-2][1-9])|10|20|30|31)\d{3}[0-9Xx]$)|(^[1-9]\d{5}\d{2}((0[1-9])|(10|11|12))(([0-2][1-9])|10|20|30|31)\d{2}[0-9Xx]$)',
+                id_card):
+            return JsonResponse({'errno': 4041, 'errmsg': '身份证格式错误'})
+
+        # 3.业务数据处理,添加真实名字和身份证号
+        try:
+            user.real_name = real_name
+            user.id_card = id_card
+            user.save()
+        except Exception as e:
+            return JsonResponse({'errno': 0, 'errmsg': '实名认证失败'})
+
+        return JsonResponse({'errno': '0', 'errmsg': '认证信息保存成功'})

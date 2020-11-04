@@ -56,7 +56,9 @@ INSTALLED_APPS = [
 
 # CORS跨域请求白名单设置
 CORS_ORIGIN_WHITELIST = [
-    'http://0.0.0.0:8081'
+    'http://0.0.0.0:8081',
+    'http://127.0.0.1:8081',
+
 ]
 
 CORS_ALLOW_CREDENTIALS = True  # 允许携带cookie
@@ -114,6 +116,8 @@ DATABASES = {
         # 'PORT': 3306 # 默认知名端口3306，mysql没有修改的情况下可以不用指定
     }
 }
+
+
 
 
 
